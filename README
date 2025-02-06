@@ -1,0 +1,4 @@
+Converts WCTE parquet files taken during beam running and creates root files for "beam events", a beam event is defined as an event with 4 coincident hits on the T1 scintillator PMTs. For each event we look for waveforms across all PMTs within a threshold number of coarse counts of the 4 coincident hits on the T1 PMTs. These waveforms are grouped into the event and written out to a ROOT TTree.
+
+Usage:
+python ConvertParquetToRoot.py -d [directory_of_parquet_files] -r [run_no]
