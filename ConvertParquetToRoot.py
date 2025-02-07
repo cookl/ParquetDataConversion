@@ -99,14 +99,14 @@ for readout_no in range(len(beam_spill_intervals)):
     #go through the triggers and build events which are within event_window_threshold of the event 
     for itrigger, trigger in enumerate(triggers):
         trigger_time=trigger['coarse']
-        readout_window_df = interval_waveforms_df[np.abs(interval_waveforms_df['coarse']-trigger_time)<event_window_threshold]
+        readout_window_df = interval_waveforms_df[(interval_waveforms_df['coarse']<(trigger_time+event_window_threshold))&(interval_waveforms_df['coarse']>(trigger_time-event_window_threshold))]
 
         unique_pmt_ids = (100*readout_window_df['card_id'])+readout_window_df['chan']
         # print("Channels reading out",len(unique_pmt_ids))
         if len(np.unique(unique_pmt_ids))!= len(unique_pmt_ids):
             #one channel reporting more than once
             print("One channel reports multiple times in readout window")
-        
+        print("n mpmt boards reporting", len(np.unique(readout_window_df['card_id'])))
         event_n_chan_readout.append(len(unique_pmt_ids))
         print("trigger n chan ",len(unique_pmt_ids) )
         #write info out to ttree the [0] is necessary for writing to ttree in pyroot
