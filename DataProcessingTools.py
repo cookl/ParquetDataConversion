@@ -23,13 +23,15 @@ class BeamSpillLEDIntervals:
         # file_pattern_waveforms = self.directory+"/periodic_readout_"+str(self.runNumber)+"_*_waveforms.parquet"  # assuming the files have .json extension
         
     
-    def loadCoarseCountsData(self, fileType):
+    def loadCoarseCountsData(self, fileType,loadCardID = False):
         #fileType either waveforms or led
         if fileType not in ["waveforms", "led"]:
             raise ValueError(f"Invalid fileType: {fileType}. Must be 'waveforms' or 'led'.")
         
         allWindows = []
         all_coarse_data = []
+        if loadCardID:
+            all_card_id_data = []
         file_pattern = self.directory+"/periodic_readout_"+str(self.runNumber)+"_*_"+fileType+".parquet"
         files = glob.glob(file_pattern)
 
@@ -43,7 +45,10 @@ class BeamSpillLEDIntervals:
                 
             # Load only the 'coarse' column
             try:
-                table = pq.read_table(file_path, columns=['coarse'])
+                if loadCardID:
+                    table = pq.read_table(file_path, columns=['coarse','card_id'])
+                else:
+                    table = pq.read_table(file_path, columns=['coarse'])
             except:
                 print("Skipping failed file",file_path )
                 continue
@@ -52,7 +57,17 @@ class BeamSpillLEDIntervals:
             coarse_data = table.column('coarse').to_numpy()
             all_coarse_data.append(coarse_data)
             
+            if loadCardID:
+                card_id_data = table.column('card_id').to_numpy()
+                all_card_id_data.append(card_id_data)
+            
         waveform_coarse_data = np.concatenate(all_coarse_data)
+       
+        if loadCardID:
+            waveform_card_id_data = np.concatenate(all_card_id_data)
+            return waveform_coarse_data, waveform_card_id_data
+
+                
         return waveform_coarse_data
         
     def find_readout_times(self,coarse_counts):
@@ -123,7 +138,7 @@ class BeamSpillLEDIntervals:
 
         return readout_intervals
     
-    def determineBeamLEDIntervals(self):
+    def determineBeamLEDIntervals(self, returnReadoutTimes = False):
         print("Determining times of LED and beam spill")
         waveform_coarse_data = self.loadCoarseCountsData("waveforms")
         led_coarse_data = self.loadCoarseCountsData("led")
@@ -153,7 +168,7 @@ class BeamSpillLEDIntervals:
         beam_spill_intervals = np.array(beam_spill_intervals)    
         led_intervals = np.array(led_intervals)
         
-        return beam_spill_intervals, led_intervals
+        return beam_spill_intervals, led_intervals, readout_times
         
 
     #This function will load all waveforms between specific coarse counters, NB due to large size this is intented to be used for a single spill 
