@@ -69,7 +69,29 @@ class BeamSpillLEDIntervals:
 
                 
         return waveform_coarse_data
+    
+    def load_led_data(self):
         
+        file_pattern = self.directory+"/periodic_readout_"+str(self.runNumber)+"_*_led.parquet"
+        files = glob.glob(file_pattern)
+
+        #now load in only those waveforms 
+        df_list = []
+        
+        for file_path in files:
+            parquet_file = pq.ParquetFile(file_path)
+            
+            df = pq.read_table(file_path, columns=['card_id', 'coarse', 'led_no', 'seq_no']).to_pandas()
+            # filtered_df = df[(df['coarse'] >= coarse_min) & (df['coarse'] <= coarse_max)]
+            # Check if filtered_df is empty
+            if not df.empty:
+                df_list.append(df)
+
+        interval_waveforms_df = pd.concat(df_list, ignore_index=True)
+
+        return interval_waveforms_df
+        
+    
     def find_readout_times(self,coarse_counts):
         #this function takes a long vector of coarse counts where readout happened 
         #it hitograms these readout times and groups them if they are within 3s of each other
@@ -182,15 +204,11 @@ class BeamSpillLEDIntervals:
         files = glob.glob(file_pattern)
 
         for file_path in files:
-            
-        # for subNo in range(nSubruns):
-        #     file_path = directory+"/periodic_readout_"+str(runNumber)+"_"+str(subNo)+"_waveforms.parquet"
-            
+
             if not os.path.exists(file_path):
                 print(f"Error: File {file_path} does not exist. Skipping this file.")
                 continue  # Skip this iteration and move to the next one
         
-            
             # Load only the 'coarse' column
             try:
                 table = pq.read_table(file_path, columns=['coarse'])
@@ -212,15 +230,15 @@ class BeamSpillLEDIntervals:
         
         for file_path in file_list:
             parquet_file = pq.ParquetFile(file_path)
-            print("opened file")
+            print("Loading waveforms from",file_path)
             
             total_rows = parquet_file.metadata.num_rows
             batches = (total_rows // chunk_size) + 1
             
             for i, batch in enumerate(parquet_file.iter_batches(batch_size=chunk_size)):
             # Process the chunk (batch)
-                if(i%100==0):
-                    print("Load", i,"/",batches)
+                # if(i%100==0):
+                    # print("Load", i,"/",batches)
                         
                 df = batch.to_pandas(split_blocks=True, self_destruct=True)
                 filtered_df = df[(df['coarse'] >= coarse_min) & (df['coarse'] <= coarse_max)]
