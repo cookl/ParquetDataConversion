@@ -79,9 +79,15 @@ class BeamSpillLEDIntervals:
         df_list = []
         
         for file_path in files:
-            parquet_file = pq.ParquetFile(file_path)
             
-            df = pq.read_table(file_path, columns=['card_id', 'coarse', 'led_no', 'seq_no']).to_pandas()
+            try:
+                parquet_file = pq.ParquetFile(file_path)
+                df = pq.read_table(file_path, columns=['card_id', 'coarse', 'led_no', 'seq_no']).to_pandas()
+            except:
+                print("Skipping failed file",file_path )
+                continue
+            
+            
             # filtered_df = df[(df['coarse'] >= coarse_min) & (df['coarse'] <= coarse_max)]
             # Check if filtered_df is empty
             if not df.empty:
